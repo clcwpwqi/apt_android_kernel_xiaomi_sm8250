@@ -8,11 +8,12 @@ set -e
 # ==========================================
 if [ -z "$1" ]; then
     echo "[!] Error: No device specified."
-    echo "Usage: $0 <device_name> [ksu] [miui|aosp]"
+    echo "Usage: $0 <device_name> [ksu] [droidspaces] [miui|aosp]"
     echo "Example: $0 lmi"
     echo "         $0 lmi ksu"
     echo "         $0 lmi ksu miui"
-    echo "         $0 lmi aosp"
+    echo "         $0 lmi droidspaces"
+    echo "         $0 lmi ksu droidspaces aosp"
     exit 1
 fi
 
@@ -27,6 +28,7 @@ if [ ! -f "$DEFCONFIG_PATH" ]; then
 fi
 
 ENABLE_KSU=0
+ENABLE_DROIDSPACES=0
 TARGET_OS="both"
 
 shift
@@ -34,6 +36,7 @@ shift
 for arg in "$@"; do
     case "$arg" in
         ksu) ENABLE_KSU=1 ;;
+        droidspaces) ENABLE_DROIDSPACES=1 ;;
         miui) TARGET_OS="miui" ;;
         aosp) TARGET_OS="aosp" ;;
     esac
@@ -195,6 +198,17 @@ build_target() {
 
     echo "[*] Making defconfig: ${DEFCONFIG}..."
     make "${MAKE_OPTS[@]}" "${DEFCONFIG}"
+
+    # ----------------------------------------------------
+    # Droidspaces configuration (optional)
+    # ----------------------------------------------------
+    # Merge the Droidspaces config fragment (arch/arm64/configs/droidspaces.config)
+    # into the device defconfig. See Documentation/Kernel-Configuration.md
+    # "Configuring Non-GKI Kernels (Legacy Kernels)" for details.
+    if [ "$ENABLE_DROIDSPACES" -eq 1 ]; then
+        echo "[*] Merging Droidspaces kernel configuration fragment..."
+        make "${MAKE_OPTS[@]}" droidspaces.config
+    fi
 
     # ----------------------------------------------------
     # Configuration tweaks
